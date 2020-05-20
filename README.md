@@ -1,7 +1,10 @@
 # quickstartcore31
 DocumentDB Quickstart todolist exampel updated to dotnet31
 
-The docs can be found here:
+Its based on this example:
+https://github.com/Azure-Samples/documentdb-dotnet-todo-app
+
+The docs can be found here (and a newer example :/):
 https://docs.microsoft.com/nb-no/azure/cosmos-db/sql-api-dotnet-application
 
 To make it work you need to download the Azure db emulator:
