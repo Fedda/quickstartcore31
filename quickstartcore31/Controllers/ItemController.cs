@@ -10,12 +10,18 @@ namespace quickstartcore31.Controllers
 
     public class ItemController : Controller
     {
+        private readonly IDocumentDBRepository<Models.Item> respository;
+        public ItemController(IDocumentDBRepository<Models.Item> respository)
+        {
+            this.respository = respository;
+        }
+
         [ActionName("Index")]
         public async Task<IActionResult> Index()
         {
             Expression<Func<Item, bool>> filterCompleted = i => !i.Completed;
             Expression<Func<Item, bool>> all = (i) => true;
-            var items = await DocumentDBRepository<Item>.GetItemsAsync(all);
+            var items = await respository.GetItemsAsync(all);
             return View(items);
         }
 
@@ -35,7 +41,7 @@ namespace quickstartcore31.Controllers
         {
             if (ModelState.IsValid)
             {
-                await DocumentDBRepository<Item>.CreateItemAsync(item);
+                await respository.CreateItemAsync(item);
                 return RedirectToAction("Index");
             }
 
@@ -49,7 +55,7 @@ namespace quickstartcore31.Controllers
         {
             if (ModelState.IsValid)
             {
-                await DocumentDBRepository<Item>.UpdateItemAsync(item.Id, item);
+                await respository.UpdateItemAsync(item.Id, item);
                 return RedirectToAction("Index");
             }
 
@@ -64,7 +70,7 @@ namespace quickstartcore31.Controllers
                 return BadRequest();
             }
 
-            Item item = await DocumentDBRepository<Item>.GetItemAsync(id);
+            Item item = await respository.GetItemAsync(id);
             if (item == null)
             {
                 return NotFound();
@@ -81,7 +87,7 @@ namespace quickstartcore31.Controllers
                 return BadRequest();
             }
 
-            Item item = await DocumentDBRepository<Item>.GetItemAsync(id);
+            Item item = await respository.GetItemAsync(id);
             if (item == null)
             {
                 return NotFound();
@@ -95,14 +101,14 @@ namespace quickstartcore31.Controllers
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> DeleteConfirmedAsync([Bind("Id")] string id)
         {
-            await DocumentDBRepository<Item>.DeleteItemAsync(id);
+            await respository.DeleteItemAsync(id);
             return RedirectToAction("Index");
         }
 
         [ActionName("Details")]
         public async Task<ActionResult> DetailsAsync(string id)
         {
-            Item item = await DocumentDBRepository<Item>.GetItemAsync(id);
+            Item item = await respository.GetItemAsync(id);
             return View(item);
         }
     }

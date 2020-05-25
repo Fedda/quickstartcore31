@@ -24,6 +24,7 @@ namespace quickstartcore31
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllersWithViews();
+            services.AddSingleton<IDocumentDBRepository<Models.Item>>(new DocumentDBRepository<Models.Item>());
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -56,7 +57,7 @@ namespace quickstartcore31
                     pattern: "{controller=Item}/{action=Index}/{id?}");
             });
 
-            DocumentDBRepository<Models.Item>.Initialize();
+            
         }
     }
 }

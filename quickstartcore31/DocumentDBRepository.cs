@@ -10,114 +10,120 @@ using Microsoft.Azure.Documents.Linq;
 namespace quickstartcore31
 {
 
-        public static class DocumentDBRepository<T> where T : class
+    public class DocumentDBRepository<T> : IDocumentDBRepository<T> where T : class
+    {
+
+        private readonly string Endpoint = "https://localhost:8081/";//"DOCUMENTDBURL";
+        private readonly string Key = "Primary Key from Azure Cosmos DB Emulator=";//"Primary Key from Azure Cosmos DB Emulator";
+        private readonly string DatabaseId = "TodoList";//"DOCUMENTDBDATABASEID";
+        private readonly string CollectionId = "Items";//"DOCUMENTDBCOLLECTIONID";
+        private DocumentClient client;
+
+        public DocumentDBRepository()
         {
-
-            private static readonly string Endpoint = "https://localhost:8081/";//"DOCUMENTDBURL";
-        private static readonly string Key = "Primary Key from Azure Cosmos DB Emulator";
-            private static readonly string DatabaseId = "TodoList";//"DOCUMENTDBDATABASEID";
-            private static readonly string CollectionId = "Items";//"DOCUMENTDBCOLLECTIONID";
-            private static DocumentClient client;
-
-            public static async Task<T> GetItemAsync(string id)
+            this.client = new DocumentClient(new Uri(Endpoint), Key);
+            CreateDatabaseIfNotExistsAsync().Wait();
+            CreateCollectionIfNotExistsAsync().Wait();
+        }
+        public async Task<T> GetItemAsync(string id)
+        {
+            try
             {
-                try
+                Document document = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(DatabaseId, CollectionId, id));
+                return (T)(dynamic)document;
+            }
+            catch (DocumentClientException e)
+            {
+                if (e.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    Document document = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(DatabaseId, CollectionId, id));
-                    return (T)(dynamic)document;
+                    return null;
                 }
-                catch (DocumentClientException e)
+                else
                 {
-                    if (e.StatusCode == System.Net.HttpStatusCode.NotFound)
-                    {
-                        return null;
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    throw;
                 }
             }
+        }
 
-            public static async Task<IEnumerable<T>> GetItemsAsync(Expression<Func<T, bool>> predicate)
+        public async Task<IEnumerable<T>> GetItemsAsync(Expression<Func<T, bool>> predicate)
+        {
+            IDocumentQuery<T> query = client.CreateDocumentQuery<T>(
+                UriFactory.CreateDocumentCollectionUri(DatabaseId, CollectionId),
+                new FeedOptions { MaxItemCount = -1 })
+                .Where(predicate)
+                .AsDocumentQuery();
+
+            List<T> results = new List<T>();
+            while (query.HasMoreResults)
             {
-                IDocumentQuery<T> query = client.CreateDocumentQuery<T>(
-                    UriFactory.CreateDocumentCollectionUri(DatabaseId, CollectionId),
-                    new FeedOptions { MaxItemCount = -1 })
-                    .Where(predicate)
-                    .AsDocumentQuery();
+                results.AddRange(await query.ExecuteNextAsync<T>());
+            }
 
-                List<T> results = new List<T>();
-                while (query.HasMoreResults)
+            return results;
+        }
+
+        public async Task<Document> CreateItemAsync(T item)
+        {
+            return await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(DatabaseId, CollectionId), item);
+        }
+
+        public async Task<Document> UpdateItemAsync(string id, T item)
+        {
+            return await client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(DatabaseId, CollectionId, id), item);
+        }
+
+        public async Task DeleteItemAsync(string id)
+        {
+            await client.DeleteDocumentAsync(UriFactory.CreateDocumentUri(DatabaseId, CollectionId, id));
+        }
+
+        public void Initialize()
+        {
+            client = new DocumentClient(new Uri(Endpoint), Key);
+            CreateDatabaseIfNotExistsAsync().Wait();
+            CreateCollectionIfNotExistsAsync().Wait();
+        }
+
+        private async Task CreateDatabaseIfNotExistsAsync()
+        {
+            try
+            {
+                await client.ReadDatabaseAsync(UriFactory.CreateDatabaseUri(DatabaseId));
+            }
+            catch (DocumentClientException e)
+            {
+                if (e.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    results.AddRange(await query.ExecuteNextAsync<T>());
+                    await client.CreateDatabaseAsync(new Database { Id = DatabaseId });
                 }
-
-                return results;
-            }
-
-            public static async Task<Document> CreateItemAsync(T item)
-            {
-                return await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(DatabaseId, CollectionId), item);
-            }
-
-            public static async Task<Document> UpdateItemAsync(string id, T item)
-            {
-                return await client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(DatabaseId, CollectionId, id), item);
-            }
-
-            public static async Task DeleteItemAsync(string id)
-            {
-                await client.DeleteDocumentAsync(UriFactory.CreateDocumentUri(DatabaseId, CollectionId, id));
-            }
-
-            public static void Initialize()
-            {
-                client = new DocumentClient(new Uri(Endpoint), Key);
-                CreateDatabaseIfNotExistsAsync().Wait();
-                CreateCollectionIfNotExistsAsync().Wait();
-            }
-
-            private static async Task CreateDatabaseIfNotExistsAsync()
-            {
-                try
+                else
                 {
-                    await client.ReadDatabaseAsync(UriFactory.CreateDatabaseUri(DatabaseId));
-                }
-                catch (DocumentClientException e)
-                {
-                    if (e.StatusCode == System.Net.HttpStatusCode.NotFound)
-                    {
-                        await client.CreateDatabaseAsync(new Database { Id = DatabaseId });
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-            }
-
-            private static async Task CreateCollectionIfNotExistsAsync()
-            {
-                try
-                {
-                    await client.ReadDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(DatabaseId, CollectionId));
-                }
-                catch (DocumentClientException e)
-                {
-                    if (e.StatusCode == System.Net.HttpStatusCode.NotFound)
-                    {
-                        await client.CreateDocumentCollectionAsync(
-                            UriFactory.CreateDatabaseUri(DatabaseId),
-                            new DocumentCollection { Id = CollectionId },
-                            new RequestOptions { OfferThroughput = 1000 });
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    throw;
                 }
             }
-        
+        }
+
+        private async Task CreateCollectionIfNotExistsAsync()
+        {
+            try
+            {
+                await client.ReadDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(DatabaseId, CollectionId));
+            }
+            catch (DocumentClientException e)
+            {
+                if (e.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    await client.CreateDocumentCollectionAsync(
+                        UriFactory.CreateDatabaseUri(DatabaseId),
+                        new DocumentCollection { Id = CollectionId },
+                        new RequestOptions { OfferThroughput = 1000 });
+                }
+                else
+                {
+                    throw;
+                }
+            }
+        }
+
     }
 }
