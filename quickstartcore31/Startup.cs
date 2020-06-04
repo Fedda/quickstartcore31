@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -24,7 +25,16 @@ namespace quickstartcore31
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllersWithViews();
-            services.AddSingleton<IDocumentDBRepository<Models.Item>>(new DocumentDBRepository<Models.Item>());
+            services.AddDbContext<TodoDbContext>(options =>
+            {
+                options.UseCosmos(
+                    accountEndpoint: Configuration["CosmosDbInfo:endpoint"],
+                    accountKey: Configuration["CosmosDbInfo:authKey"],
+                    databaseName: Configuration["CosmosDbInfo:database"]);
+            });
+            //services.AddSingleton<IDocumentDBRepository<Models.Item>>(new DocumentDBRepository<Models.Item>(Configuration));            
+            //services.AddScoped<IDocumentDBRepository<Models.Item>, DocumentDBRepository<Models.Item>>();
+            services.AddScoped<IDocumentDBRepository<Models.Item>, CosmoDBEFRepository<Models.Item>>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -41,6 +41,7 @@ namespace quickstartcore31.Controllers
         {
             if (ModelState.IsValid)
             {
+                item.Id = Guid.NewGuid().ToString();
                 await respository.CreateItemAsync(item);
                 return RedirectToAction("Index");
             }
@@ -101,7 +102,8 @@ namespace quickstartcore31.Controllers
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> DeleteConfirmedAsync([Bind("Id")] string id)
         {
-            await respository.DeleteItemAsync(id);
+            Item item = await respository.GetItemAsync(id);
+            await respository.DeleteItemAsync(id, item);
             return RedirectToAction("Index");
         }
 

@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Runtime.Intrinsics.X86;
 using System.Threading.Tasks;
 using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents.Linq;
+using Microsoft.Extensions.Configuration;
 
 namespace quickstartcore31
 {
@@ -13,14 +15,20 @@ namespace quickstartcore31
     public class DocumentDBRepository<T> : IDocumentDBRepository<T> where T : class
     {
 
-        private readonly string Endpoint = "https://localhost:8081/";//"DOCUMENTDBURL";
-        private readonly string Key = "Primary Key from Azure Cosmos DB Emulator=";//"Primary Key from Azure Cosmos DB Emulator";
-        private readonly string DatabaseId = "TodoList";//"DOCUMENTDBDATABASEID";
+
+
+        private readonly string Endpoint = "";//"DOCUMENTDBURL";
+        private readonly string Key = ""; 
+        private readonly string DatabaseId = "";//"DOCUMENTDBDATABASEID";
         private readonly string CollectionId = "Items";//"DOCUMENTDBCOLLECTIONID";
         private DocumentClient client;
 
-        public DocumentDBRepository()
+        public DocumentDBRepository(IConfiguration Configuration)
         {
+            Endpoint = Configuration["CosmosDbInfo:endpoint"];
+            Key = Configuration["CosmosDbInfo:authKey"];
+            DatabaseId = Configuration["CosmosDbInfo:database"];
+
             this.client = new DocumentClient(new Uri(Endpoint), Key);
             CreateDatabaseIfNotExistsAsync().Wait();
             CreateCollectionIfNotExistsAsync().Wait();
@@ -62,27 +70,26 @@ namespace quickstartcore31
             return results;
         }
 
-        public async Task<Document> CreateItemAsync(T item)
+        public async Task<T> CreateItemAsync(T item)
         {
-            return await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(DatabaseId, CollectionId), item);
+            var document = await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(DatabaseId, CollectionId), item);
+
+            return (T)(dynamic)document.Resource;
+
+
         }
 
-        public async Task<Document> UpdateItemAsync(string id, T item)
+        public async Task<T> UpdateItemAsync(string id, T item)
         {
-            return await client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(DatabaseId, CollectionId, id), item);
+            var document = await client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(DatabaseId, CollectionId, id), item);
+            return (T)(dynamic)document.Resource;
         }
 
-        public async Task DeleteItemAsync(string id)
+        public async Task DeleteItemAsync(string id, T item)
         {
             await client.DeleteDocumentAsync(UriFactory.CreateDocumentUri(DatabaseId, CollectionId, id));
         }
 
-        public void Initialize()
-        {
-            client = new DocumentClient(new Uri(Endpoint), Key);
-            CreateDatabaseIfNotExistsAsync().Wait();
-            CreateCollectionIfNotExistsAsync().Wait();
-        }
 
         private async Task CreateDatabaseIfNotExistsAsync()
         {
