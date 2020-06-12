@@ -14,7 +14,7 @@ namespace quickstartcore31
         {
             Database.EnsureCreated();
         }
-
+        public DbSet<Models.Item> Items { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.HasDefaultContainer("Items");
@@ -24,7 +24,21 @@ namespace quickstartcore31
             //    entity.HasNoKey();
 
             //});
+            //Test data
+            //modelBuilder.Entity<Models.Item>().HasData(
+            //    new Item()
+            //    {
+            //        Id = Guid.NewGuid().ToString(),
+            //        Completed = false,
+            //        Description = "todo todo",
+            //        Name = "todo todo todo"
+            //    });
+
+            //base.OnModelCreating(modelBuilder);
+
+
+
         }
-        public DbSet<Models.Item> Items { get; set; }
+
     }
 }

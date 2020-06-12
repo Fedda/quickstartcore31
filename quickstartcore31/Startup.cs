@@ -25,16 +25,31 @@ namespace quickstartcore31
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllersWithViews();
-            services.AddDbContext<TodoDbContext>(options =>
+            var useInMemoryDb = Configuration["UseInMemoryDb"];
+            var useAzureDocumentClient = Configuration["UseAzureDocumentClient"];
+            if (useAzureDocumentClient == "true")
             {
-                options.UseCosmos(
-                    accountEndpoint: Configuration["CosmosDbInfo:endpoint"],
-                    accountKey: Configuration["CosmosDbInfo:authKey"],
-                    databaseName: Configuration["CosmosDbInfo:database"]);
-            });
-            //services.AddSingleton<IDocumentDBRepository<Models.Item>>(new DocumentDBRepository<Models.Item>(Configuration));            
-            //services.AddScoped<IDocumentDBRepository<Models.Item>, DocumentDBRepository<Models.Item>>();
-            services.AddScoped<IDocumentDBRepository<Models.Item>, CosmoDBEFRepository<Models.Item>>();
+                services.AddSingleton<IDocumentDBRepository<Models.Item>>(new DocumentDBRepository<Models.Item>(Configuration));
+            }
+            else if (useInMemoryDb == "true")
+            {
+                services.AddDbContext<TodoDbContext>(options =>
+                {
+                    options.UseInMemoryDatabase("TodoList");
+                });
+                services.AddScoped<IDocumentDBRepository<Models.Item>, CosmoDBEFRepository<Models.Item>>();
+            }
+            else
+            {
+                services.AddDbContext<TodoDbContext>(options =>
+                {
+                    options.UseCosmos(
+                        accountEndpoint: Configuration["CosmosDbInfo:endpoint"],
+                        accountKey: Configuration["CosmosDbInfo:authKey"],
+                        databaseName: Configuration["CosmosDbInfo:database"]);
+                });
+                services.AddScoped<IDocumentDBRepository<Models.Item>, CosmoDBEFRepository<Models.Item>>();
+            }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -67,7 +82,7 @@ namespace quickstartcore31
                     pattern: "{controller=Item}/{action=Index}/{id?}");
             });
 
-            
+
         }
     }
 }

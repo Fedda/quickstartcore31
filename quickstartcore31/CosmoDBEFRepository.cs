@@ -39,6 +39,10 @@ namespace quickstartcore31
 
         public async Task<T> GetItemAsync(string id)
         {
+            if (String.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentException(nameof(id));
+            }
             T item = await context.FindAsync<T>(id);
 
             return item;
