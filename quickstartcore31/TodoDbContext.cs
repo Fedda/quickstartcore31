@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.Extensions.Logging;
 using quickstartcore31.Models;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ namespace quickstartcore31
         {
             Database.EnsureCreated();
         }
+
         public DbSet<Models.Item> Items { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -35,10 +37,25 @@ namespace quickstartcore31
             //    });
 
             //base.OnModelCreating(modelBuilder);
-
-
-
         }
 
+        //public static readonly ILoggerFactory ConsoleLoggerFactory
+        //    = LoggerFactory.Create(builder =>
+        //    {
+        //        && category == DbLoggerCategory.Database.Command.Name
+        //        builder
+        //            .AddFilter((category, level) => level == LogLevel.Trace)
+        //            .AddConsole()
+        //            .AddDebug();
+        //    });
+
+        public static readonly Microsoft.Extensions.Logging.LoggerFactory LoggerFactory =
+            new LoggerFactory(new[] {
+                new Microsoft.Extensions.Logging.Debug.DebugLoggerProvider()
+        });
+
+        //Doesn't work is visual studio output.... https://docs.microsoft.com/en-us/ef/core/miscellaneous/logging?tabs=v3
+    //    public static readonly ILoggerFactory MyLoggerFactory =
+    //LoggerFactory.Create(builder => { builder.AddConsole().AddDebug(); });
     }
 }

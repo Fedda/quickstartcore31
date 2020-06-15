@@ -6,14 +6,18 @@ namespace quickstartcore31.Controllers
     using System.Linq.Expressions;
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Mvc;
+    using Microsoft.Extensions.Logging;
     using Models;
 
     public class ItemController : Controller
     {
         private readonly IDocumentDBRepository<Models.Item> respository;
-        public ItemController(IDocumentDBRepository<Models.Item> respository)
+        private readonly ILogger<ItemController>  _logger;
+
+        public ItemController(IDocumentDBRepository<Models.Item> respository, ILogger<ItemController> logger)
         {
             this.respository = respository;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         [ActionName("Index")]
@@ -22,6 +26,7 @@ namespace quickstartcore31.Controllers
             Expression<Func<Item, bool>> filterCompleted = i => !i.Completed;
             Expression<Func<Item, bool>> all = (i) => true;
             var items = await respository.GetItemsAsync(all);
+            _logger.LogInformation($"Fetching items... ");
             return View(items);
         }
 

@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 
 namespace quickstartcore31
 {
@@ -35,22 +37,29 @@ namespace quickstartcore31
             {
                 services.AddDbContext<TodoDbContext>(options =>
                 {
-                    options.UseInMemoryDatabase("TodoList");
+                    options.UseInMemoryDatabase("TodoList");                    
                 });
                 services.AddScoped<IDocumentDBRepository<Models.Item>, CosmoDBEFRepository<Models.Item>>();
             }
             else
             {
+
                 services.AddDbContext<TodoDbContext>(options =>
                 {
+                    options.UseLoggerFactory(TodoDbContext.LoggerFactory);                    
                     options.UseCosmos(
                         accountEndpoint: Configuration["CosmosDbInfo:endpoint"],
                         accountKey: Configuration["CosmosDbInfo:authKey"],
                         databaseName: Configuration["CosmosDbInfo:database"]);
+                    options.EnableSensitiveDataLogging();
+                    
+                    
                 });
                 services.AddScoped<IDocumentDBRepository<Models.Item>, CosmoDBEFRepository<Models.Item>>();
             }
+            
         }
+
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
